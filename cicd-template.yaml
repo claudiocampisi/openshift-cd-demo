@@ -100,7 +100,7 @@ objects:
             stages {
               stage('Build App') {
                 steps {
-                  git branch: 'eap-7', url: 'http://gogs:3000/gogs/openshift-tasks.git'
+                  git branch: 'eap-7', url: 'https://github.com/claudiocampisi/openshift-tasks.git'
                   sh "${mvnCmd} install -DskipTests=true"
                 }
               }
@@ -123,17 +123,19 @@ objects:
                 }
               }
               stage('Build Image') {
-                steps {
-                  sh "cp target/openshift-tasks.war target/ROOT.war"
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject(env.DEV_PROJECT) {
-                        openshift.selector("bc", "tasks").startBuild("--from-file=target/ROOT.war", "--wait=true")
+                  steps {
+                    sh "mkdir -p oc-build/configuration"
+                    sh "cp target/openshift-tasks.war oc-build/ROOT.war"
+                    sh "cp configuration/*.properties oc-build/configuration"
+                    script {
+                      openshift.withCluster() {
+                        openshift.withProject(env.DEV_PROJECT) {
+                          openshift.selector("bc", "tasks").startBuild("--from-dir=oc-build", "--wait=true")
+                        }
                       }
                     }
                   }
                 }
-              }
               stage('Deploy DEV') {
                 steps {
                   script {
